@@ -1,0 +1,50 @@
+@prefix lv2:    <http://lv2plug.in/ns/lv2core#> .
+@prefix modgui: <http://moddevices.com/ns/modgui#> .
+
+<urn:jtbassmidi:bass-midi>
+	modgui:gui [
+		modgui:resourcesDirectory <modgui> ;
+		modgui:iconTemplate <modgui/icon-jtbassmidi.html> ;
+		modgui:stylesheet <modgui/stylesheet-jtbassmidi.css> ;
+		modgui:screenshot <modgui/screenshot-jtbassmidi.png> ;
+		modgui:thumbnail <modgui/thumbnail-jtbassmidi.png> ;
+		modgui:brand "JT" ;
+		modgui:label "Bass MIDI" ;
+		modgui:port [
+			lv2:index 0 ;
+			lv2:symbol "sensitivity" ;
+			lv2:name "Gate"
+		] , [
+			lv2:index 1 ;
+			lv2:symbol "dynamics" ;
+			lv2:name "Dynamics"
+		] , [
+			lv2:index 2 ;
+			lv2:symbol "bend_range" ;
+			lv2:name "Bend"
+		] , [
+			lv2:index 3 ;
+			lv2:symbol "thru" ;
+			lv2:name "Thru"
+		] , [
+			lv2:index 4 ;
+			lv2:symbol "channel" ;
+			lv2:name "Channel"
+		] , [
+			lv2:index 5 ;
+			lv2:symbol "transpose" ;
+			lv2:name "Transpose"
+		] , [
+			lv2:index 6 ;
+			lv2:symbol "hold" ;
+			lv2:name "Hold"
+		] , [
+			lv2:index 7 ;
+			lv2:symbol "release" ;
+			lv2:name "Release"
+		] , [
+			lv2:index 8 ;
+			lv2:symbol "hold_mode" ;
+			lv2:name "Hold Mode"
+		] ;
+	] .

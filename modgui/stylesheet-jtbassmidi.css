@@ -1,0 +1,131 @@
+/* JTBassMIDI MOD GUI. Coordinates match tools/make_modgui.py. */
+
+.jtbm{{{cns}}} {
+    position: relative;
+    width: 360px;
+    height: 600px;
+    background-image: url(/resources/panel.png{{{ns}}});
+    background-repeat: no-repeat;
+    background-size: 360px 600px;
+    border-radius: 16px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55);
+}
+
+.jtbm{{{cns}}} .mod-drag-handle {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1;
+}
+
+/* ---- knobs (sprite strip, one square frame per position) ---- */
+
+.jtbm{{{cns}}} .jtbm-knob {
+    position: absolute;
+    z-index: 2;
+    cursor: pointer;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+}
+
+.jtbm{{{cns}}} .jtbm-big {
+    width: 56px;
+    height: 56px;
+    background-image: url(/resources/knob.png{{{ns}}});
+}
+
+/* centre (cx, cy) minus half the knob size */
+.jtbm{{{cns}}} .jtbm-sensitivity { left:  24px; top:  42px; }
+.jtbm{{{cns}}} .jtbm-dynamics    { left: 108px; top:  42px; }
+.jtbm{{{cns}}} .jtbm-bend_range  { left: 196px; top:  42px; }
+.jtbm{{{cns}}} .jtbm-thru        { left: 280px; top:  42px; }
+.jtbm{{{cns}}} .jtbm-channel     { left: 108px; top: 144px; }
+.jtbm{{{cns}}} .jtbm-transpose   { left: 196px; top: 144px; }
+
+/* ---- Hold / Release buttons (2-frame sprite: off, on) ---- */
+
+.jtbm{{{cns}}} .jtbm-button {
+    position: absolute;
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    background-image: url(/resources/button.png{{{ns}}});
+    background-repeat: no-repeat;
+    background-position: 0 0;
+}
+
+.jtbm{{{cns}}} .jtbm-button.on       { background-position: -40px 0; }
+.jtbm{{{cns}}} .jtbm-release:active  { background-position: -40px 0; }
+
+/* centre (cx, cy) minus half the button size */
+.jtbm{{{cns}}} .jtbm-hold    { left:  32px; top: 152px; }
+.jtbm{{{cns}}} .jtbm-release { left: 288px; top: 152px; }
+
+/* ---- Hold Mode toggle (2-frame sprite: Note Change, Latch) ---- */
+
+.jtbm{{{cns}}} .jtbm-toggle {
+    position: absolute;
+    z-index: 2;
+    left: 160px;  /* 180 - 20 */
+    top: 264px;   /* 284 - 20 */
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    background-image: url(/resources/toggle.png{{{ns}}});
+    background-repeat: no-repeat;
+    background-position: 0 0;
+}
+
+.jtbm{{{cns}}} .jtbm-toggle.on { background-position: -40px 0; }
+
+/* ---- bypass LED ---- */
+
+.jtbm{{{cns}}} .jtbm-led {
+    position: absolute;
+    z-index: 2;
+    left: 55px;   /* 60 - 5 */
+    top: 525px;   /* 530 - 5 */
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: none;
+}
+
+.jtbm{{{cns}}} .jtbm-led.on {
+    background: radial-gradient(circle at 35% 35%, #ffc2b8 0%, #ff3b2e 45%, #b0120a 100%);
+    box-shadow: 0 0 6px 2px rgba(255, 50, 35, 0.75);
+}
+
+.jtbm{{{cns}}} .jtbm-led.off {
+    background: radial-gradient(circle at 35% 35%, #5a1410 0%, #2a0606 100%);
+    box-shadow: none;
+}
+
+/* ---- footswitch (the cap is drawn on the panel) ---- */
+
+.jtbm{{{cns}}} .jtbm-footswitch {
+    position: absolute;
+    z-index: 2;
+    left: 150px;  /* 180 - 30 */
+    top: 500px;   /* 530 - 30 */
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+}
+
+.jtbm{{{cns}}} .jtbm-footswitch:active {
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+/* ---- jacks ---- */
+
+/* Only the height is set here. MOD's own pedal CSS places the input on
+ * the left edge and the outputs on the right; overriding left/right
+ * pushes the jacks onto the panel. */
+.jtbm{{{cns}}} .mod-pedal-input,
+.jtbm{{{cns}}} .mod-pedal-output {
+    top: 60px;
+    z-index: 3;
+}

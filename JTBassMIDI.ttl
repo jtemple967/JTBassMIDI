@@ -1,0 +1,149 @@
+@prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap:   <http://usefulinc.com/ns/doap#> .
+@prefix lv2:    <http://lv2plug.in/ns/lv2core#> .
+@prefix midi:   <http://lv2plug.in/ns/ext/midi#> .
+@prefix mod:    <http://moddevices.com/ns/mod#> .
+@prefix pprops: <http://lv2plug.in/ns/ext/port-props#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix units:  <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:   <http://lv2plug.in/ns/ext/urid#> .
+
+<urn:jtbassmidi:bass-midi>
+	a lv2:Plugin , lv2:MIDIPlugin ;
+	doap:name "JTBassMIDI" ;
+	doap:license <http://opensource.org/licenses/isc> ;
+	mod:brand "JT" ;
+	mod:label "Bass MIDI" ;
+	lv2:minorVersion 1 ;
+	lv2:microVersion 0 ;
+	rdfs:comment "Monophonic bass-to-MIDI converter. Tracks the pitch of a bass guitar and sends MIDI notes with velocity and optional pitch bend. The audio passes through, so it can sit inline on a pedalboard." ;
+	lv2:requiredFeature urid:map ;
+	lv2:optionalFeature lv2:hardRTCapable ;
+	lv2:port [
+		a lv2:AudioPort , lv2:InputPort ;
+		lv2:index 0 ;
+		lv2:symbol "in" ;
+		lv2:name "In"
+	] , [
+		a lv2:AudioPort , lv2:OutputPort ;
+		lv2:index 1 ;
+		lv2:symbol "out" ;
+		lv2:name "Out"
+	] , [
+		a atom:AtomPort , lv2:OutputPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports midi:MidiEvent ;
+		lv2:index 2 ;
+		lv2:symbol "midi_out" ;
+		lv2:name "MIDI Out"
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 3 ;
+		lv2:symbol "enabled" ;
+		lv2:name "Enabled" ;
+		lv2:designation lv2:enabled ;
+		lv2:portProperty lv2:toggled , lv2:integer ;
+		lv2:default 1 ;
+		lv2:minimum 0 ;
+		lv2:maximum 1
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 4 ;
+		lv2:symbol "thru" ;
+		lv2:name "Thru" ;
+		rdfs:comment "Level of the bass passed through to the audio output." ;
+		lv2:default 1.0 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 1.0
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 5 ;
+		lv2:symbol "channel" ;
+		lv2:name "Channel" ;
+		lv2:portProperty lv2:integer ;
+		lv2:default 1 ;
+		lv2:minimum 1 ;
+		lv2:maximum 16
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 6 ;
+		lv2:symbol "transpose" ;
+		lv2:name "Transpose" ;
+		lv2:portProperty lv2:integer ;
+		units:unit units:semitone12TET ;
+		lv2:default 0 ;
+		lv2:minimum -24 ;
+		lv2:maximum 24
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 7 ;
+		lv2:symbol "sensitivity" ;
+		lv2:name "Gate Threshold" ;
+		units:unit units:db ;
+		lv2:default -48.0 ;
+		lv2:minimum -80.0 ;
+		lv2:maximum -10.0
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 8 ;
+		lv2:symbol "dynamics" ;
+		lv2:name "Dynamics" ;
+		rdfs:comment "0 sends every note at velocity 100; 1 follows your picking strength fully." ;
+		lv2:default 0.7 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 1.0
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 9 ;
+		lv2:symbol "bend_range" ;
+		lv2:name "Bend Range" ;
+		rdfs:comment "Set this to the receiving synth's pitch-bend range. 0 turns pitch bend off and quantises to the nearest note." ;
+		lv2:portProperty lv2:integer ;
+		units:unit units:semitone12TET ;
+		lv2:default 2 ;
+		lv2:minimum 0 ;
+		lv2:maximum 24 ;
+		lv2:scalePoint [ rdfs:label "Off" ; rdf:value 0 ]
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 10 ;
+		lv2:symbol "hold" ;
+		lv2:name "Hold" ;
+		rdfs:comment "Keeps the note sounding after the string stops. Hold Mode sets what ends it: a different note (Note Change) or only Release (Latch)." ;
+		lv2:portProperty lv2:toggled , lv2:integer ;
+		lv2:default 0 ;
+		lv2:minimum 0 ;
+		lv2:maximum 1
+	] , [
+		a lv2:ControlPort , lv2:OutputPort ;
+		lv2:index 11 ;
+		lv2:symbol "note" ;
+		lv2:name "Note" ;
+		rdfs:comment "MIDI note currently sounding, or -1." ;
+		lv2:default -1 ;
+		lv2:minimum -1 ;
+		lv2:maximum 127
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 12 ;
+		lv2:symbol "release" ;
+		lv2:name "Release" ;
+		rdfs:comment "Momentary: ends the sounding note (for example one kept by Hold). The string is ignored until the next pluck." ;
+		lv2:portProperty lv2:toggled , lv2:integer , pprops:trigger ;
+		lv2:default 0 ;
+		lv2:minimum 0 ;
+		lv2:maximum 1
+	] , [
+		a lv2:ControlPort , lv2:InputPort ;
+		lv2:index 13 ;
+		lv2:symbol "hold_mode" ;
+		lv2:name "Hold Mode" ;
+		rdfs:comment "How Hold behaves. Note Change: the held note sustains until a different note is played. Latch: the held note sustains until Release is pressed; other notes are ignored." ;
+		lv2:portProperty lv2:toggled , lv2:integer ;
+		lv2:default 0 ;
+		lv2:minimum 0 ;
+		lv2:maximum 1 ;
+		lv2:scalePoint [ rdfs:label "Note Change" ; rdf:value 0 ] ,
+		               [ rdfs:label "Latch" ;       rdf:value 1 ]
+	] .

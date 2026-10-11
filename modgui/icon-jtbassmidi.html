@@ -1,0 +1,38 @@
+<div class="mod-pedal jtbm{{{cns}}}">
+    <div mod-role="drag-handle" class="mod-drag-handle"></div>
+
+    <div class="mod-knob-image jtbm-knob jtbm-big jtbm-sensitivity" mod-role="input-control-port" mod-port-symbol="sensitivity" title="Gate Threshold"></div>
+    <div class="mod-knob-image jtbm-knob jtbm-big jtbm-dynamics"    mod-role="input-control-port" mod-port-symbol="dynamics"    title="Dynamics"></div>
+    <div class="mod-knob-image jtbm-knob jtbm-big jtbm-bend_range"  mod-role="input-control-port" mod-port-symbol="bend_range"  title="Bend Range"></div>
+    <div class="mod-knob-image jtbm-knob jtbm-big jtbm-thru"        mod-role="input-control-port" mod-port-symbol="thru"        title="Thru"></div>
+    <div class="mod-knob-image jtbm-knob jtbm-big jtbm-channel"     mod-role="input-control-port" mod-port-symbol="channel"     title="MIDI Channel"></div>
+    <div class="mod-knob-image jtbm-knob jtbm-big jtbm-transpose"   mod-role="input-control-port" mod-port-symbol="transpose"   title="Transpose"></div>
+
+    <div class="mod-switch-image jtbm-button jtbm-hold"    mod-role="input-control-port" mod-port-symbol="hold"    title="Hold: keep the note until the next one or Release"></div>
+    <div class="mod-switch-image jtbm-button jtbm-release" mod-role="input-control-port" mod-port-symbol="release" title="Release the held note"></div>
+    <div class="mod-switch-image jtbm-toggle"              mod-role="input-control-port" mod-port-symbol="hold_mode" title="Hold Mode: Note Change (left) or Latch (right)"></div>
+
+    <div class="mod-light jtbm-led on" mod-role="bypass-light"></div>
+    <div class="mod-footswitch jtbm-footswitch" mod-role="bypass"></div>
+
+    <div class="mod-pedal-input">
+        {{#effect.ports.audio.input}}
+        <div class="mod-input mod-input-disconnected" title="{{name}}" mod-role="input-audio-port" mod-port-symbol="{{symbol}}">
+            <div class="mod-pedal-input-image"></div>
+        </div>
+        {{/effect.ports.audio.input}}
+    </div>
+
+    <div class="mod-pedal-output">
+        {{#effect.ports.audio.output}}
+        <div class="mod-output mod-output-disconnected" title="{{name}}" mod-role="output-audio-port" mod-port-symbol="{{symbol}}">
+            <div class="mod-pedal-output-image"></div>
+        </div>
+        {{/effect.ports.audio.output}}
+        {{#effect.ports.midi.output}}
+        <div class="mod-output mod-output-disconnected" title="{{name}}" mod-role="output-midi-port" mod-port-symbol="{{symbol}}">
+            <div class="mod-pedal-output-image"></div>
+        </div>
+        {{/effect.ports.midi.output}}
+    </div>
+</div>
