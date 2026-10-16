@@ -1,5 +1,6 @@
 @prefix atom:   <http://lv2plug.in/ns/ext/atom#> .
 @prefix doap:   <http://usefulinc.com/ns/doap#> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
 @prefix lv2:    <http://lv2plug.in/ns/lv2core#> .
 @prefix midi:   <http://lv2plug.in/ns/ext/midi#> .
 @prefix mod:    <http://moddevices.com/ns/mod#> .
@@ -9,10 +10,20 @@
 @prefix units:  <http://lv2plug.in/ns/extensions/units#> .
 @prefix urid:   <http://lv2plug.in/ns/ext/urid#> .
 
-<urn:jtbassmidi:bass-midi>
+<https://github.com/jtemple967/JTBassMIDI>
 	a lv2:Plugin , lv2:MIDIPlugin ;
 	doap:name "JTBassMIDI" ;
-	doap:license <http://opensource.org/licenses/isc> ;
+	doap:license <http://opensource.org/licenses/GPL-3.0> ;
+	doap:maintainer [
+		a foaf:Person ;
+		foaf:name "Jonas Temple"
+	] ;
+	doap:homepage <https://github.com/jtemple967/JTBassMIDI> ;
+	doap:repository [
+		a doap:GitRepository ;
+		doap:location <https://github.com/jtemple967/JTBassMIDI.git> ;
+		doap:browse <https://github.com/jtemple967/JTBassMIDI>
+	] ;
 	mod:brand "JT" ;
 	mod:label "Bass MIDI" ;
 	lv2:minorVersion 1 ;
@@ -110,7 +121,7 @@
 		lv2:index 10 ;
 		lv2:symbol "hold" ;
 		lv2:name "Hold" ;
-		rdfs:comment "Keeps the note sounding after the string stops. Hold Mode sets what ends it: a different note (Note Change) or only Release (Latch)." ;
+		rdfs:comment "Keeps the note sounding after the string stops, until a different note is played or Release is pressed. With Latch on, only Release ends it." ;
 		lv2:portProperty lv2:toggled , lv2:integer ;
 		lv2:default 0 ;
 		lv2:minimum 0 ;
@@ -137,13 +148,11 @@
 	] , [
 		a lv2:ControlPort , lv2:InputPort ;
 		lv2:index 13 ;
-		lv2:symbol "hold_mode" ;
-		lv2:name "Hold Mode" ;
-		rdfs:comment "How Hold behaves. Note Change: the held note sustains until a different note is played. Latch: the held note sustains until Release is pressed; other notes are ignored." ;
+		lv2:symbol "latch" ;
+		lv2:name "Latch" ;
+		rdfs:comment "How Hold behaves. Off: the held note sustains until a different note is played. On: the held note sustains until Release is pressed; other notes are ignored." ;
 		lv2:portProperty lv2:toggled , lv2:integer ;
 		lv2:default 0 ;
 		lv2:minimum 0 ;
-		lv2:maximum 1 ;
-		lv2:scalePoint [ rdfs:label "Note Change" ; rdf:value 0 ] ,
-		               [ rdfs:label "Latch" ;       rdf:value 1 ]
+		lv2:maximum 1
 	] .

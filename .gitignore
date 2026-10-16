@@ -1,0 +1,11 @@
+# build output
+JTBassMIDI.lv2/
+tools/test_tracking
+tools/test_tracking.exe
+*.o
+*.so
+*.dll
+*.dylib
+
+# Python
+__pycache__/

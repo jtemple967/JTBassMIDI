@@ -5,7 +5,7 @@ Writes into ../modgui/:
   panel.png        pedal face (enclosure, silkscreen, footswitch, LED bezel)
   knob.png         64-frame sprite, large knob (56 px frames)
   button.png       2-frame sprite, Hold / Release push button (off, on; 40 px frames)
-  toggle.png       2-frame sprite, Hold Mode bat toggle (Note Change, Latch; 40 px frames)
+  toggle.png       2-frame sprite, Latch bat toggle (off, on; 40 px frames)
   screenshot-jtbassmidi.png / thumbnail-jtbassmidi.png
 
 Same drawing style as JTBassSynth (knobs, screws, footswitch), with a navy
@@ -41,7 +41,7 @@ KNOBS = [
 BUTTONS = [("hold",    "HOLD",    52, 172),
            ("release", "RELEASE", 308, 172)]
 BTN = 40
-TOGGLE = (180, 284)   # Hold Mode switch centre; 40 px frames like the buttons
+TOGGLE = (180, 284)   # Latch switch centre; 40 px frames like the buttons
 LED = (60, 530)
 FOOTSWITCH = (180, 530, 30)
 
@@ -228,11 +228,11 @@ def panel():
     for _, label, cx, cy in BUTTONS:
         d.text((cx * S, (cy + BIG / 2 + 16) * S), label, font=f_lbl, fill=INK, anchor="mm")
 
-    # Hold Mode switch legends
+    # Latch switch legends
     tx, ty = TOGGLE
-    d.text(((tx - 26) * S, ty * S), "NOTE", font=f_sm, fill=INK, anchor="rm")
-    d.text(((tx + 26) * S, ty * S), "LATCH", font=f_sm, fill=INK, anchor="lm")
-    d.text((tx * S, (ty + 30) * S), "HOLD MODE", font=f_lbl, fill=ACCENT, anchor="mm")
+    d.text(((tx - 26) * S, ty * S), "OFF", font=f_sm, fill=INK, anchor="rm")
+    d.text(((tx + 26) * S, ty * S), "ON", font=f_sm, fill=INK, anchor="lm")
+    d.text((tx * S, (ty + 30) * S), "LATCH", font=f_lbl, fill=ACCENT, anchor="mm")
 
     # divider rules
     for yy in (238, 448):

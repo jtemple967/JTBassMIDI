@@ -61,7 +61,7 @@
 .jtbm{{{cns}}} .jtbm-hold    { left:  32px; top: 152px; }
 .jtbm{{{cns}}} .jtbm-release { left: 288px; top: 152px; }
 
-/* ---- Hold Mode toggle (2-frame sprite: Note Change, Latch) ---- */
+/* ---- Latch toggle (2-frame sprite: off, on) ---- */
 
 .jtbm{{{cns}}} .jtbm-toggle {
     position: absolute;

@@ -53,11 +53,11 @@ bass in ─┬──────────────────────
   out ends when the level falls below the gate (half the Gate Threshold level). Neither
   applies while Hold is on.
 * **Hold and Release:** with Hold on, the note keeps sounding after the string stops.
-  Hold Mode sets what ends it:
-  * **Note Change:** a different note replaces it (or Release ends it). Plucking the note
+  The Latch switch sets what ends it:
+  * **Latch off:** a different note replaces it (or Release ends it). Plucking the note
     that is already sounding doesn't restart it; it keeps sustaining.
-  * **Latch:** only Release ends it. Anything you play meanwhile is ignored: no new notes
-    and no pitch bend. After Release, the next note you play latches.
+  * **Latch on:** only Release ends it. Anything you play meanwhile is ignored: no new
+    notes and no pitch bend. After Release, the next note you play latches.
 
   Release ends the note at once, even if the string is still ringing; the ringing string
   is then ignored until your next pluck. Release works with Hold off too, as a quick way
@@ -76,13 +76,13 @@ bass in ─┬──────────────────────
 | Thru           | 0–1             | Level of the bass passed to the audio output |
 | Channel        | 1–16            | MIDI output channel |
 | Transpose      | ±24 semitones   | +12 puts the bass an octave up, which suits many synth patches |
-| Hold           | on / off        | Keeps the note sounding after the string stops; Hold Mode sets what ends it |
+| Hold           | on / off        | Keeps the note sounding after the string stops, until a different note or Release |
 | Release        | momentary       | Ends the sounding note |
-| Hold Mode      | Note / Latch    | What ends a held note: a different note, or only Release |
+| Latch          | on / off        | With Hold on: only Release ends the held note; other notes are ignored |
 
-Hold and Release are buttons on the pedal face, with the Hold Mode toggle between them.
-On a pi-Stomp you can also assign them to footswitches: Hold as a latching switch,
-Release as a momentary one.
+Hold and Release are buttons on the pedal face, with the Latch toggle between them.
+On a pi-Stomp you can also assign them to footswitches: Hold and Latch as latching
+switches, Release as a momentary one.
 
 The plugin also has an output port, **Note**, that shows the MIDI note currently sounding
 (−1 when none). It's useful for checking the tracking.
@@ -108,12 +108,14 @@ and low-fret notes on each string.
 You need a C compiler and the LV2 headers (`lv2-dev` on Debian/Ubuntu/Raspberry Pi OS).
 
 ```bash
+git clone https://github.com/jtemple967/JTBassMIDI.git
+cd JTBassMIDI
 make
 make install        # → ~/.lv2 (Linux), ~/Library/Audio/Plug-Ins/LV2 (macOS), %APPDATA%/LV2 (MinGW)
 make test           # offline tracking test with synthetic plucks (see below)
 ```
 
-URI: `urn:jtbassmidi:bass-midi`. It appears in MOD as *JT → Bass MIDI*.
+URI: `https://github.com/jtemple967/JTBassMIDI`. It appears in MOD as *JT → Bass MIDI*.
 
 ### On a pi-Stomp (Raspberry Pi 5)
 
@@ -172,11 +174,15 @@ minimal stand-in LV2 headers; `make test` on the Pi builds it against the real o
 | File | Purpose |
 |------|---------|
 | `modgui.ttl` | Points MOD at the template, stylesheet, screenshot and thumbnail |
-| `modgui/icon-jtbassmidi.html` | Pedal template (knobs, Hold/Release buttons, Hold Mode toggle, footswitch, LED, audio and MIDI jacks) |
+| `modgui/icon-jtbassmidi.html` | Pedal template (knobs, Hold/Release buttons, Latch toggle, footswitch, LED, audio and MIDI jacks) |
 | `modgui/stylesheet-jtbassmidi.css` | Control positions and sprites |
-| `modgui/*.png` | Panel artwork, knob film strip, Hold/Release button and Hold Mode toggle sprites, screenshot, thumbnail |
+| `modgui/*.png` | Panel artwork, knob film strip, Hold/Release button and Latch toggle sprites, screenshot, thumbnail |
 | `tools/make_modgui.py` | Regenerates every PNG (`make modgui-images`, needs Pillow) |
 
 The style matches JTBassSynth, with a navy enclosure and amber legends so the two are easy
 to tell apart. If you change the layout in `tools/make_modgui.py`, update the matching
 `left`/`top` values in the stylesheet.
+
+## License
+
+Copyright (c) 2026 Jonas Temple. Released under the GNU General Public License v3.0 or later; see `LICENSE`.

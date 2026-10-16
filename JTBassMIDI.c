@@ -11,7 +11,20 @@
  * The audio input passes through to the audio output (Thru level), so the
  * plugin can sit inline on a pedalboard.
  *
- * Copyright (c) 2026. ISC License.
+ * Copyright (c) 2026 Jonas Temple
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include <math.h>
@@ -31,7 +44,7 @@
 #include <lv2/midi/midi.h>
 #include <lv2/urid/urid.h>
 
-#define JTBM_URI "urn:jtbassmidi:bass-midi"
+#define JTBM_URI "https://github.com/jtemple967/JTBassMIDI"
 
 #define JTBM_PI 3.14159265358979323846
 
@@ -49,7 +62,7 @@ typedef enum {
 	P_HOLD,
 	P_NOTE,
 	P_RELEASE,
-	P_HOLD_MODE,
+	P_LATCH,
 	P_COUNT
 } PortIndex;
 
@@ -142,7 +155,7 @@ typedef struct {
 	/* per-run control values */
 	int   ch, transpose, bend_range;
 	bool  hold;
-	bool  latch;        /* Hold Mode: false = Note Change, true = Latch */
+	bool  latch;        /* Latch: a held note ends only on Release */
 	float thr_db, dyn;
 
 	float thru_s;
@@ -617,7 +630,7 @@ static void run(LV2_Handle h, uint32_t n)
 	const float thru    = clampf(*(float*)self->port[P_THRU], 0.0f, 1.0f);
 	const bool  hold    = *(float*)self->port[P_HOLD] > 0.5f;
 	self->hold       = hold;
-	self->latch      = *(float*)self->port[P_HOLD_MODE] > 0.5f;
+	self->latch      = *(float*)self->port[P_LATCH] > 0.5f;
 	self->ch         = clampi((int)lrintf(*(float*)self->port[P_CHANNEL]), 1, 16) - 1;
 	self->transpose  = clampi((int)lrintf(*(float*)self->port[P_TRANSPOSE]), -36, 36);
 	self->bend_range = clampi((int)lrintf(*(float*)self->port[P_BEND]), 0, 24);
