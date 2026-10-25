@@ -62,7 +62,7 @@ typedef enum {
 	P_HOLD,
 	P_NOTE,
 	P_RELEASE,
-	P_LATCH,
+	P_HOLD_MODE,
 	P_COUNT
 } PortIndex;
 
@@ -80,6 +80,13 @@ typedef struct {
 #define BEND_DELAY  4       /* readings a bend is held back (~11 ms) */
 #define BEND_SETTLE 4       /* readings after a note start before bends follow */
 #define CAND_N      6       /* agreeing readings needed for a change without a pluck */
+#define STACK_MAX   3       /* notes held at once in Stack mode */
+
+typedef enum {
+	HM_NORMAL = 0, /* a held note ends when a different note is played */
+	HM_LATCH,      /* a held note ends only on Release; other notes are ignored */
+	HM_STACK       /* new notes are added on top, up to STACK_MAX; Release ends all */
+} HoldMode;
 
 typedef struct {
 	void* port[P_COUNT];
@@ -143,7 +150,9 @@ typedef struct {
 	int    base;        /* tracked note, before transpose */
 
 	/* what the receiver currently has */
-	int  cur_note;      /* sounding MIDI note, or -1 */
+	int  cur_note;      /* newest sounding MIDI note, or -1 */
+	int  older[STACK_MAX - 1]; /* Stack mode: earlier notes still sounding, oldest first */
+	int  nolder;
 	int  cur_ch;
 	int  cur_transpose;
 	int  last_bend;     /* -1 forces the next bend to be sent */
@@ -155,7 +164,7 @@ typedef struct {
 	/* per-run control values */
 	int   ch, transpose, bend_range;
 	bool  hold;
-	bool  latch;        /* Latch: a held note ends only on Release */
+	int   hold_mode;    /* HoldMode */
 	float thr_db, dyn;
 
 	float thru_s;
@@ -283,6 +292,7 @@ static void activate(LV2_Handle h)
 	reset_tracking(self);
 	self->has_base = false;
 	self->cur_note = -1;
+	self->nolder = 0;
 	self->last_bend = -1;
 	self->was_enabled = true;
 	self->panic = true;
@@ -303,12 +313,31 @@ static void midi3(JTBassMIDI* self, uint32_t t, uint8_t a, uint8_t b, uint8_t c)
 	lv2_atom_forge_write(&self->forge, msg, 3);
 }
 
+/* End every sounding note (in Stack mode there can be up to STACK_MAX). */
 static void note_off(JTBassMIDI* self, uint32_t t)
 {
+	for (int k = 0; k < self->nolder; ++k)
+		midi3(self, t, (uint8_t)(LV2_MIDI_MSG_NOTE_OFF | self->cur_ch),
+		      (uint8_t)self->older[k], 0);
+	self->nolder = 0;
 	if (self->cur_note < 0) return;
 	midi3(self, t, (uint8_t)(LV2_MIDI_MSG_NOTE_OFF | self->cur_ch),
 	      (uint8_t)self->cur_note, 0);
 	self->cur_note = -1;
+}
+
+/* Hold is on with Hold Mode set to Stack. */
+static inline bool stacking(const JTBassMIDI* self)
+{
+	return self->hold && self->hold_mode == HM_STACK;
+}
+
+static bool is_sounding(const JTBassMIDI* self, int note)
+{
+	if (note == self->cur_note) return true;
+	for (int k = 0; k < self->nolder; ++k)
+		if (self->older[k] == note) return true;
+	return false;
 }
 
 /* Pitch bend, skipped when it moved less than ~2 cents (keeps DIN MIDI
@@ -342,19 +371,41 @@ static uint8_t velocity(const JTBassMIDI* self, float amp)
 	return (uint8_t)clampi((int)lrintf(v), 1, 127);
 }
 
-/* Replace whatever is sounding with the note nearest to `semi`. */
+/* Replace whatever is sounding with the note nearest to `semi` (or, in
+ * Stack mode, add it on top). */
 static void start_note(JTBassMIDI* self, uint32_t t, double semi, uint8_t vel)
 {
 	const int base = (int)lrint(semi);
 	const int note = base + self->transpose;
 
-	/* Hold: playing the sounding note again keeps sustaining it. */
-	if (self->hold && note == self->cur_note && self->ch == self->cur_ch) {
+	/* Hold: playing a note that is already sounding keeps sustaining it. */
+	if (self->hold && self->ch == self->cur_ch && is_sounding(self, note)) {
 		self->base = base;
 		self->has_base = true;
 		self->hcount = 0;
 		self->bq_n = 0;
 		self->settle = BEND_SETTLE;
+		return;
+	}
+
+	/* Stack: add the new note without ending the others. Past STACK_MAX
+	 * notes the oldest is dropped. No pitch bend: it would bend the chord. */
+	if (stacking(self) && self->cur_note >= 0 && self->ch == self->cur_ch &&
+	    self->transpose == self->cur_transpose) {
+		self->base = base;
+		self->has_base = true;
+		self->hcount = 0;
+		self->bq_n = 0;
+		if (note < 0 || note > 127) return;
+		if (self->nolder == STACK_MAX - 1) {
+			midi3(self, t, (uint8_t)(LV2_MIDI_MSG_NOTE_OFF | self->cur_ch),
+			      (uint8_t)self->older[0], 0);
+			for (int k = 1; k < self->nolder; ++k) self->older[k - 1] = self->older[k];
+			self->nolder--;
+		}
+		self->older[self->nolder++] = self->cur_note;
+		midi3(self, t, (uint8_t)(LV2_MIDI_MSG_NOTE_ON | self->ch), (uint8_t)note, vel);
+		self->cur_note = note;
 		return;
 	}
 
@@ -394,7 +445,7 @@ static void on_estimate(JTBassMIDI* self, double semi, float dip, uint32_t t)
 {
 	/* Latch mode: while Hold keeps a note, nothing the strings do changes
 	 * it (no new notes, no bends) until Release. */
-	if (self->hold && self->latch && self->cur_note >= 0) {
+	if (self->hold && self->hold_mode == HM_LATCH && self->cur_note >= 0) {
 		self->awaiting = false;
 		self->cand_active = false;
 		return;
@@ -440,7 +491,9 @@ static void on_estimate(JTBassMIDI* self, double semi, float dip, uint32_t t)
 	/* Changes are measured against the sounding note, not the previous
 	 * reading: after a one-off outlier, coming back to the sounding note is
 	 * not a jump (that used to restart the same note). */
-	const int    R      = self->bend_range;
+	/* No bends while stacking, so pitch changes are quantised as if Bend
+	 * Range were Off. */
+	const int    R      = stacking(self) ? 0 : self->bend_range;
 	const double dev    = semi - self->base;
 	const bool   moved  = lrint(semi) != self->base;
 	const bool   jump   = moved && fabs(semi - self->prev) > 0.75;
@@ -630,7 +683,7 @@ static void run(LV2_Handle h, uint32_t n)
 	const float thru    = clampf(*(float*)self->port[P_THRU], 0.0f, 1.0f);
 	const bool  hold    = *(float*)self->port[P_HOLD] > 0.5f;
 	self->hold       = hold;
-	self->latch      = *(float*)self->port[P_LATCH] > 0.5f;
+	self->hold_mode  = clampi((int)lrintf(*(float*)self->port[P_HOLD_MODE]), HM_NORMAL, HM_STACK);
 	self->ch         = clampi((int)lrintf(*(float*)self->port[P_CHANNEL]), 1, 16) - 1;
 	self->transpose  = clampi((int)lrintf(*(float*)self->port[P_TRANSPOSE]), -36, 36);
 	self->bend_range = clampi((int)lrintf(*(float*)self->port[P_BEND]), 0, 24);
@@ -683,7 +736,8 @@ static void run(LV2_Handle h, uint32_t n)
 
 	/* Hold switched off while a note was being held after the gate closed. */
 	if (!hold && !self->gate) note_off(self, 0);
-	if (self->bend_range == 0 && self->last_bend >= 0 && self->last_bend != BEND_CENTER)
+	if ((self->bend_range == 0 || stacking(self)) &&
+	    self->last_bend >= 0 && self->last_bend != BEND_CENTER)
 		bend(self, 0, 0.0, true);
 
 	/* envelope coefficients (same as JTBassSynth) */

@@ -46,7 +46,7 @@ static int nev;
 static long release_at = -1;
 
 typedef struct {
-	float thru, channel, transpose, sens, dyn, bend, hold, enabled, note, latch;
+	float thru, channel, transpose, sens, dyn, bend, hold, enabled, note, hold_mode;
 } Controls;
 
 static void run_plugin(const float* in, long len, Controls c)
@@ -68,7 +68,7 @@ static void run_plugin(const float* in, long len, Controls c)
 	descriptor.connect_port(h, P_NOTE, &c.note);
 	float release = 0.0f;
 	descriptor.connect_port(h, P_RELEASE, &release);
-	descriptor.connect_port(h, P_LATCH, &c.latch);
+	descriptor.connect_port(h, P_HOLD_MODE, &c.hold_mode);
 	descriptor.activate(h);
 
 	nev = 0;
@@ -438,10 +438,10 @@ static void test_release(void)
 
 static void test_latch(void)
 {
-	printf("\nHold + Latch: other notes ignored until Release (A1, D2, Release, G2)\n");
+	printf("\nHold Mode = Latch: other notes ignored until Release (A1, D2, Release, G2)\n");
 	Controls c = defaults();
 	c.hold = 1.0f;
-	c.latch = 1.0f;
+	c.hold_mode = 1.0f; /* Latch */
 	const long len = FS * 2;
 	memset(buf, 0, sizeof(float) * len);
 	pluck(buf, FS / 5, FS / 4, 33, 0.3f, &MIXES[0], 0, 0, 0);
@@ -550,6 +550,45 @@ static void test_fingerstyle_scale(void)
 	check(big_bends == 0, "no pitch bend over 15 cents");
 }
 
+/* Hold Mode = Stack: build A major one note at a time (A1, C#2, E2), pluck
+ * A1 again (already sounding: nothing sent), then A2, which drops the oldest
+ * note (A1) to stay at three. Release ends the rest. No pitch bend. */
+static void test_stack(void)
+{
+	printf("\nHold Mode = Stack: A1, C#2, E2, A1 again, A2, then Release\n");
+	Controls c = defaults();
+	c.hold = 1.0f;
+	c.hold_mode = 2.0f; /* Stack */
+	static const int seq[] = { 33, 37, 40, 33, 45 };
+	const long step = FS * 2 / 5, t0 = FS / 5, len = FS * 3;
+	memset(buf, 0, sizeof(buf));
+	for (int k = 0; k < 5; ++k)
+		pluck(buf, t0 + k * step, FS * 7 / 20, seq[k], 0.3f, &MIXES[0], 0, 0, 0);
+	release_at = FS * 5 / 2;
+	run_plugin(buf, len, c);
+	release_at = -1;
+
+	/* Release takes effect at the start of the block it is pressed in. */
+	const long rel_t = (FS * 5 / 2) / BLOCK * BLOCK;
+	int ons[8], non = 0, offs_before = 0, off_dropped = 0, offs_after = 0, bends = 0;
+	for (int e = 0; e < nev; ++e) {
+		if (is_on(&evs[e]) && non < 8) ons[non++] = evs[e].m[1];
+		if (is_off(&evs[e])) {
+			if (evs[e].t < rel_t) { offs_before++; if (evs[e].m[1] == 33) off_dropped++; }
+			else offs_after++;
+		}
+		if (is_bend(&evs[e]) && (evs[e].m[1] | (evs[e].m[2] << 7)) != 8192) bends++;
+	}
+	printf("  note-ons:");
+	for (int k = 0; k < non; ++k) printf(" %d", ons[k]);
+	printf("; note-offs before Release %d, after %d\n", offs_before, offs_after);
+	check(non == 4 && ons[0] == 33 && ons[1] == 37 && ons[2] == 40 && ons[3] == 45,
+	      "A1, C#2, E2, A2 (the repeated A1 sends nothing)");
+	check(offs_before == 1 && off_dropped == 1, "only A1 ends before Release, dropped when A2 makes four");
+	check(offs_after == 3, "Release ends the three stacked notes");
+	check(bends == 0, "no pitch bend while stacking");
+}
+
 int main(void)
 {
 	printf("JTBassMIDI offline tracking test (%d Hz, %d-frame blocks)\n", FS, BLOCK);
@@ -564,6 +603,7 @@ int main(void)
 	test_hold_and_transpose();
 	test_release();
 	test_latch();
+	test_stack();
 	printf("\n%s (%d failure%s)\n", failures ? "FAILED" : "PASSED", failures, failures == 1 ? "" : "s");
 	return failures ? 1 : 0;
 }

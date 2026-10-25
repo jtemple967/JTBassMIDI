@@ -121,7 +121,7 @@
 		lv2:index 10 ;
 		lv2:symbol "hold" ;
 		lv2:name "Hold" ;
-		rdfs:comment "Keeps the note sounding after the string stops, until a different note is played or Release is pressed. With Latch on, only Release ends it." ;
+		rdfs:comment "Keeps the note sounding after the string stops. Hold Mode sets what ends it: a different note (Normal), only Release (Latch), or Stack, where new notes are added on top until Release." ;
 		lv2:portProperty lv2:toggled , lv2:integer ;
 		lv2:default 0 ;
 		lv2:minimum 0 ;
@@ -148,11 +148,14 @@
 	] , [
 		a lv2:ControlPort , lv2:InputPort ;
 		lv2:index 13 ;
-		lv2:symbol "latch" ;
-		lv2:name "Latch" ;
-		rdfs:comment "How Hold behaves. Off: the held note sustains until a different note is played. On: the held note sustains until Release is pressed; other notes are ignored." ;
-		lv2:portProperty lv2:toggled , lv2:integer ;
+		lv2:symbol "hold_mode" ;
+		lv2:name "Hold Mode" ;
+		rdfs:comment "How Hold behaves. Normal: the held note sustains until a different note is played. Latch: the held note sustains until Release; other notes are ignored. Stack: each new note is added on top of the held ones (up to three; the oldest is dropped) until Release, so you can build a chord one note at a time. No pitch bend in Stack." ;
+		lv2:portProperty lv2:integer , lv2:enumeration ;
 		lv2:default 0 ;
 		lv2:minimum 0 ;
-		lv2:maximum 1
+		lv2:maximum 2 ;
+		lv2:scalePoint [ rdfs:label "Normal" ; rdf:value 0 ] ,
+		               [ rdfs:label "Latch" ;  rdf:value 1 ] ,
+		               [ rdfs:label "Stack" ;  rdf:value 2 ]
 	] .

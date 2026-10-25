@@ -5,7 +5,7 @@ Writes into ../modgui/:
   panel.png        pedal face (enclosure, silkscreen, footswitch, LED bezel)
   knob.png         64-frame sprite, large knob (56 px frames)
   button.png       2-frame sprite, Hold / Release push button (off, on; 40 px frames)
-  toggle.png       2-frame sprite, Latch bat toggle (off, on; 40 px frames)
+  selector.png     3-frame sprite, Hold Mode selector (Normal, Latch, Stack; 64 px frames)
   screenshot-jtbassmidi.png / thumbnail-jtbassmidi.png
 
 Same drawing style as JTBassSynth (knobs, screws, footswitch), with a navy
@@ -41,7 +41,8 @@ KNOBS = [
 BUTTONS = [("hold",    "HOLD",    52, 172),
            ("release", "RELEASE", 308, 172)]
 BTN = 40
-TOGGLE = (180, 284)   # Latch switch centre; 40 px frames like the buttons
+SELECTOR = dict(symbol="hold_mode", cx=180, cy=300, size=64, default=0,
+                labels=["NORMAL", "LATCH", "STACK"], angles=[-60, 0, 60])
 LED = (60, 530)
 FOOTSWITCH = (180, 530, 30)
 
@@ -143,23 +144,35 @@ def button_frame(size, lit):
     return img.resize((size, size), Image.LANCZOS)
 
 
-def toggle_frame(size, right):
-    """Mini bat-handle toggle seen from above: hex nut, chrome bushing and a
-    lever pointing left (Note Change) or right (Latch)."""
+def selector_frame(size, angle):
+    """Chicken-head rotary selector on a brushed-metal skirt (same drawing as
+    JTBassSynth's Voice selector)."""
     n = size * S
     c = n / 2
-    img = drop_shadow((n, n), c, c, n * 0.30, n * 0.03, n * 0.03)
+    img = drop_shadow((n, n), c, c, n * 0.45, n * 0.03, n * 0.03)
     d = ImageDraw.Draw(img)
-    hexagon = [polar(c, c, n * 0.30, 30 + 60 * k) for k in range(6)]
-    d.polygon(hexagon, fill=(150, 153, 160), outline=(70, 72, 78))
-    shaded_disc(d, c, c, n * 0.19, (225, 228, 234), (110, 113, 120), 20)
-    ang = 90 if right else -90
-    tip = polar(c, c, n * 0.46, ang)
-    w = n * 0.11
-    d.line([(c, c), tip], fill=(205, 208, 214), width=int(w))
-    d.ellipse([tip[0] - w * 0.75, tip[1] - w * 0.75, tip[0] + w * 0.75, tip[1] + w * 0.75],
-              fill=(235, 237, 242), outline=(90, 92, 98))
-    d.ellipse([c - n * 0.07, c - n * 0.07, c + n * 0.07, c + n * 0.07], fill=(60, 62, 68))
+
+    # brushed-metal skirt
+    shaded_disc(d, c, c, n * 0.46, (220, 224, 230), (120, 124, 132))
+    d.ellipse([c - n * 0.46, c - n * 0.46, c + n * 0.46, c + n * 0.46],
+              outline=(70, 72, 78), width=S)
+
+    # chicken-head body: tapered pointer plus round hub
+    body = (14, 14, 16)
+    tip = polar(c, c, n * 0.45, angle)
+    tail = polar(c, c, n * 0.30, angle + 180)
+    lft = polar(c, c, n * 0.20, angle - 90)
+    rgt = polar(c, c, n * 0.20, angle + 90)
+    tl = polar(*tail, n * 0.12, angle - 90)
+    tr = polar(*tail, n * 0.12, angle + 90)
+    d.polygon([tip, rgt, tr, tl, lft], fill=body)
+    shaded_disc(d, c, c, n * 0.22, (70, 72, 80), body)
+
+    # white index line
+    w = max(2, int(n * 0.04))
+    x1, y1 = polar(c, c, n * 0.16, angle)
+    x2, y2 = polar(c, c, n * 0.41, angle)
+    d.line([x1, y1, x2, y2], fill=INK, width=w)
     return img.resize((size, size), Image.LANCZOS)
 
 
@@ -228,11 +241,17 @@ def panel():
     for _, label, cx, cy in BUTTONS:
         d.text((cx * S, (cy + BIG / 2 + 16) * S), label, font=f_lbl, fill=INK, anchor="mm")
 
-    # Latch switch legends
-    tx, ty = TOGGLE
-    d.text(((tx - 26) * S, ty * S), "OFF", font=f_sm, fill=INK, anchor="rm")
-    d.text(((tx + 26) * S, ty * S), "ON", font=f_sm, fill=INK, anchor="lm")
-    d.text((tx * S, (ty + 30) * S), "LATCH", font=f_lbl, fill=ACCENT, anchor="mm")
+    # Hold Mode selector legends
+    sx, sy, ssz = SELECTOR["cx"] * S, SELECTOR["cy"] * S, SELECTOR["size"]
+    for label, a in zip(SELECTOR["labels"], SELECTOR["angles"]):
+        p1 = polar(sx, sy, (ssz / 2 + 3) * S, a)
+        p2 = polar(sx, sy, (ssz / 2 + 9) * S, a)
+        d.line([p1, p2], fill=ACCENT, width=2 * S)
+        tx, ty = polar(sx, sy, (ssz / 2 + 14) * S, a)
+        sn = math.sin(math.radians(a))
+        anchor = "rm" if sn < -0.2 else ("lm" if sn > 0.2 else "mb")
+        d.text((tx, ty), label, font=f_sm, fill=INK, anchor=anchor)
+    d.text((sx, sy + (ssz / 2 + 16) * S), "HOLD MODE", font=f_lbl, fill=ACCENT, anchor="mm")
 
     # divider rules
     for yy in (238, 448):
@@ -272,12 +291,13 @@ def main():
     angles = [-ARC + k * (2 * ARC / (KNOB_FRAMES - 1)) for k in range(KNOB_FRAMES)]
     big = sprite([knob_frame(BIG, a) for a in angles])
     btn = sprite([button_frame(BTN, False), button_frame(BTN, True)])
-    tog = sprite([toggle_frame(BTN, False), toggle_frame(BTN, True)])
+    ssz = SELECTOR["size"]
+    sel = sprite([selector_frame(ssz, a) for a in SELECTOR["angles"]])
     face = panel()
 
     big.save(os.path.join(OUT, "knob.png"), optimize=True)
     btn.save(os.path.join(OUT, "button.png"), optimize=True)
-    tog.save(os.path.join(OUT, "toggle.png"), optimize=True)
+    sel.save(os.path.join(OUT, "selector.png"), optimize=True)
     face.save(os.path.join(OUT, "panel.png"), optimize=True)
 
     # screenshot: face with every control at its default value, LED lit
@@ -288,7 +308,9 @@ def main():
         shot.alpha_composite(tile, (cx - BIG // 2, cy - BIG // 2))
     for _, _, cx, cy in BUTTONS:  # both default to off
         shot.alpha_composite(btn.crop((0, 0, BTN, BTN)), (cx - BTN // 2, cy - BTN // 2))
-    shot.alpha_composite(tog.crop((0, 0, BTN, BTN)), (TOGGLE[0] - BTN // 2, TOGGLE[1] - BTN // 2))
+    f = SELECTOR["default"]
+    shot.alpha_composite(sel.crop((f * ssz, 0, (f + 1) * ssz, ssz)),
+                         (SELECTOR["cx"] - ssz // 2, SELECTOR["cy"] - ssz // 2))
 
     glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     gd = ImageDraw.Draw(glow)
